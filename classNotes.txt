@@ -1,0 +1,125 @@
+
+
+Big data
+
+Distributed
+
+cluster
+
+node
+
+
+scaling
+	up
+	out
+
+Managed
+
+cloud computing
+
+serverless
+
+
+cloud data plateform / data cloud
+
+
+warehouse  : computing power
+
+database
+datalake
+
+
+2012		: AWS
+2014
+2018-19		: multi cloud expansion
+2021		: Ml/Al
+
+
+1st evolution
+
+on-premises data warehouse
+SQL
+
+
+challenges
+
+- structured data
+
+	
+2nd evolution
+
+- cloud
+
+
+3rd evolution
+	- all kind of data
+	- ACID complie
+
+
+Snowflake
+
+
+- data cloud plateform
+- unified
+- built-in analytics
+- new / fresh in cloud data ware house
+- built only for cloud
+- Aws, Azure, GCP
+- ACID
+- time travel
+- data sharing 
+- all popular connector
+- Data cloning 
+- all kind use 
+- python/ java
+- UDF
+- Reader's account
+- out of  boxsecurity ( RBAC/encryption/column level masking/ row level security)
+- Pay per sec billing model
+- Virtual warehouse
+- scalability
+
+	
+one platform, one copy of data, many workload
+
+
+unlimited performance and scaling
+
+Near zero maintenance
+Security
+
+- SQL
+
+
+
+editions
+
+
+standard
+	multi cluster WH
+	90 days TT
+	annual encry key
+	Materialized view
+	
+enterprise
+	
+business critical
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
