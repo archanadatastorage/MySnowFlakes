@@ -106,6 +106,151 @@ enterprise
 business critical
 
 
+---------------------------
+
+Shared Disk Architecture
+
+compute = processing
+
+- centralized
+- shared strorage
+- SPOF
+- scaling 
+
+
+Shared Nothing Architecture
+
+
+- distributed
+- scaling out- unlimited
+- no share
+- no SPOF
+
+Hybrid Architecture
+
+- Shared Disk Architecture + Shared Nothing Architecture
+- decouple storage  and compute
+- they can scale independently
+
+storage : shared storage
+compute : independent ( warehouse)
+
+
+file format
+	- row wise : text, xml, avro,json,Orc, RDBMS
+	- column wise : parquet, RC
+
+
+
+Storage layer
+
+- cloud storage
+- struct, unstr, semistruct
+- database-> schema -> table
+- table 
+- view
+- columner format
+- compressed 
+- String encryption
+- Time travel
+- zero copy
+- data share
+- micro partition
+- cluster
+
+Compute layer
+
+
+- processing
+- query, UDF, procedure
+- execution
+- virtual warehouse
+- can access data
+- scale out
+- cloud 
+- MPP
+
+
+Cloud service layer
+
+- brain of the snowflax
+- syntax
+- execution plan
+- coordinator
+- management all the layers
+- Authentication
+- Authorisation
+- user management
+- role
+- Session mgmt
+- Transaction 
+
+
+------------------------
+
+Container
+
+organisation
+
+account				container
+	database
+		schema
+
+data
+	insert
+
+	bulk insert
+
+
+collection
+
+	way to collection/ingest from sources -> snowflake
+
+	- files ( text, json, parquet,orc,xml etc)
+	- real time data (kafka, API)
+	- sythetic/ generate data
+	- exetrnal souce(s3,blob, GCP)
+
+
+ ways in snowflake
+	- stages
+	- snowpipe
+	- connector
+	- External Table
+	- Copy Into
+
+
+source system   -> collection system -> snowflake table
+
+
+
+File format
+
+	- batch data
+	- read/write
+	- BOF/EOF
+	- unit of data : record
+	- BOR/EOR
+	- stored
+          
+	lib/(reader/writer)/parsers   
+
+text
+xml
+   <emp>
+      <id>12</id>
+   </emp>
+
+java sequential 
+avro : row
+parquet :col
+json :
+Bson
+ORC
+
+
+
+external source(file/real) --->stage(file/real)-->File format  -->snowflakes(table)
 
 
 
