@@ -1,0 +1,140 @@
+use database DEMO_DB;
+create schema WorkStages;
+
+create or replace stage stage28;
+describe stage stage28;
+list @stage28;
+
+create table emp
+(
+employee_id int,
+first_name string,
+last_name string,
+email string,
+phone_number string,
+hire_date string,
+job_id string,
+salary int,
+commission_pct int,
+manager_id int,
+department_id int
+);
+select count(*) from emp;
+
+drop table emp;
+
+copy into emp from @stage28
+file_format = (type = csv field_delimiter=',' ,skip_header=1)
+force = true
+pattern =('e*.*');
+
+List @stage28;
+
+create table latlon
+(
+citycode int,
+latti number(10,5),
+longitude number(10,5)
+);
+
+copy into latlon from @stage28/latlondata/
+FILES = ('latlon.tsv')
+file_format = (type = csv field_delimiter='\t');
+
+select * from latlon limit 5;
+
+list @stage28;
+
+create table people
+(
+name string,
+age number(3),
+pcode string 
+);
+
+copy into people from @stage28/jsondata/
+file_format =(type = json )
+MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE;
+
+select * from people;
+
+create table account(
+acct_num integer 
+ , acct_create_dt int 
+ , acct_close_dt int 
+ , first_name string 
+ , last_name string 
+ , address string 
+ , city string 
+ , state string 
+ , zipcode string 
+ , phone_number string 
+ , created int 
+ , modified int);
+
+ create or replace file format pdata 
+ type = parquet;
+
+list @stage28;
+copy into account from @stage28/pardata/
+file_format = pdata
+size_limit = 1000
+MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE;
+
+select count(*) from account ;
+
+truncate table account;
+
+
+
+create table acc2col
+(
+acct_num integer 
+ , acct_create_dt int 
+ , acct_close_dt int 
+ , first_name string 
+);
+
+create table emp3col
+(
+employee_id int,
+first_name string,
+last_name string);
+
+list @stage28;
+
+
+copy into emp3col  from (select s.$1,s.$2,s.$3 from @stage28/dataforstage/ s)
+file_format = (type = csv field_delimiter=',' ,skip_header=1)
+files =('employee.csv');
+
+
+select * from emp3col;
+
+drop table empsal;
+ create table empsal
+(
+employee_id int,
+first_name string,
+salary int,
+status String);
+
+copy into empsal from (
+select 
+s.$1,
+s.$2,
+s.$8,
+case when cast(s.$8 as int) > 20000 then 'High'
+else 'low' end
+from @stage28/dataforstage/ s
+)
+file_format = (type = csv field_delimiter=',' ,skip_header=1)
+files =('employee.csv');
+
+
+select * from empsal;
+select * from  demo_db.information_schema.load_history;
+
+SELECT * FROM LATLON;
+List @stage28/latlondata;
+truncate table latlon;
