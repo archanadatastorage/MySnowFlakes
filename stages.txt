@@ -1,0 +1,95 @@
+create database sampletest;
+create schema first;
+create stage stg1;
+describe stage stg1;
+list @stg1;
+create table emp
+(
+employee_id int,
+first_name string,
+last_name string,
+email string,
+phone_number string,
+hire_date string,
+job_id string,
+salary number(10,2),
+commission_pct number (2,2),
+manager_id int,
+department_id int
+);
+drop table emp;
+copy into emp from @stg1 file_format = (type = csv field_delimiter=',' skip_header=1);
+select * from emp limit 2;
+select count(*) from emp;
+drop table latlon;
+create table latlon
+(
+cid int,
+latti number(10,4),
+longi number(10,4)
+);
+
+
+
+COPY INTO latlon 
+FROM @stg1/mydata/
+FILES = ('latlon.tsv')
+FILE_FORMAT = (
+    TYPE = CSV
+    FIELD_DELIMITER = '\t'
+);
+
+list @stg1;
+
+create table ppl
+(
+name string,
+age int,
+pcode string);
+
+copy into ppl from @stg1/mydata2/
+FILES = ('people.json')
+FILE_FORMAT = (
+    TYPE = json
+)
+MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE;
+
+select * from ppl;
+
+
+create table account(
+acct_num integer 
+ , acct_create_dt int 
+ , acct_close_dt int 
+ , first_name string 
+ , last_name string 
+ , address string 
+ , city string 
+ , state string 
+ , zipcode string 
+ , phone_number string 
+ , created int 
+ , modified int);
+
+ copy into account from @stg1/accounts/
+FILE_FORMAT = (
+    TYPE = parquet
+)
+MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE;
+
+select * from account;
+
+SELECT 
+    SEQ4() AS id,
+    CONCAT('User_', SEQ4()) AS name
+FROM TABLE(GENERATOR(ROWCOUNT => 10));
+
+
+
+list @stg1/img;
+select count(*) from @stg1/img;
+-- Enable directory table on your existing stage
+ALTER STAGE stg1 SET DIRECTORY = (ENABLE = TRUE);
+
+-- Refresh the metadata (mandatory after enabling)
+ALTER STAGE stg1 REFRESH;

@@ -1,0 +1,287 @@
+All Types of Joins in Snowflake
+
+In Snowflake, joins are used to combine rows from two or more tables based on related columns. Snowflake supports standard SQL joins plus advanced joins like ASOF JOIN.
+
+🔹 Sample Tables for Lab
+Employee Table
+CREATE OR REPLACE TABLE employees (
+    emp_id INT,
+    emp_name STRING,
+    dept_id INT
+);
+
+INSERT INTO employees VALUES
+(1,'John',10),
+(2,'Mike',20),
+(3,'Sara',30),
+(4,'David',NULL);
+Department Table
+CREATE OR REPLACE TABLE departments (
+    dept_id INT,
+    dept_name STRING
+);
+
+INSERT INTO departments VALUES
+(10,'HR'),
+(20,'IT'),
+(40,'Finance');
+1. INNER JOIN
+
+Returns only matching rows from both tables.
+
+Syntax
+SELECT *
+FROM employees e
+INNER JOIN departments d
+ON e.dept_id = d.dept_id;
+Result
+emp_name	dept_name
+John	HR
+Mike	IT
+2. LEFT OUTER JOIN
+
+Returns:
+
+all rows from LEFT table
+matching rows from RIGHT table
+NULL when no match exists
+Syntax
+SELECT *
+FROM employees e
+LEFT JOIN departments d
+ON e.dept_id = d.dept_id;
+Result
+emp_name	dept_name
+John	HR
+Mike	IT
+Sara	NULL
+David	NULL
+3. RIGHT OUTER JOIN
+
+Returns:
+
+all rows from RIGHT table
+matching rows from LEFT table
+Syntax
+SELECT *
+FROM employees e
+RIGHT JOIN departments d
+ON e.dept_id = d.dept_id;
+Result
+emp_name	dept_name
+John	HR
+Mike	IT
+NULL	Finance
+4. FULL OUTER JOIN
+
+Returns:
+
+all matching rows
+unmatched rows from both tables
+Syntax
+SELECT *
+FROM employees e
+FULL OUTER JOIN departments d
+ON e.dept_id = d.dept_id;
+5. CROSS JOIN
+
+Cartesian Product:
+Every row from first table joins with every row from second table.
+
+If:
+
+employees = 4 rows
+departments = 3 rows
+
+Result = 12 rows
+
+Syntax
+SELECT *
+FROM employees
+CROSS JOIN departments;
+
+⚠ Very expensive on large tables.
+
+6. SELF JOIN
+
+A table joined with itself.
+
+Used for:
+
+employee-manager hierarchy
+parent-child relations
+Example
+CREATE OR REPLACE TABLE staff (
+    emp_id INT,
+    emp_name STRING,
+    manager_id INT
+);
+
+INSERT INTO staff VALUES
+(1,'John',NULL),
+(2,'Mike',1),
+(3,'Sara',1);
+Query
+SELECT
+e.emp_name AS employee,
+m.emp_name AS manager
+FROM staff e
+LEFT JOIN staff m
+ON e.manager_id = m.emp_id;
+7. NATURAL JOIN
+
+Automatically joins columns with same names.
+
+Syntax
+SELECT *
+FROM employees
+NATURAL JOIN departments;
+
+Snowflake automatically uses:
+
+ON employees.dept_id = departments.dept_id
+
+⚠ Dangerous in production because accidental matching columns can produce wrong results.
+
+8. JOIN USING
+
+Cleaner syntax when column names are same.
+
+Syntax
+SELECT *
+FROM employees
+JOIN departments
+USING (dept_id);
+
+Difference:
+
+ON → explicit condition
+USING → same column name in both tables
+
+
+
+9. ASOF JOIN (Snowflake Advanced Join)
+
+Special join for:
+
+time-series data
+stock prices
+IoT
+event streams
+
+Finds nearest timestamp match.
+
+
+Rollback-Based Pricing for Telecom Calls
+In telecom, pricing isn’t always fixed. Rates can change multiple times per day depending on user plans, regional promotions, or time-based offers.
+
+But here’s the challenge:
+When a user makes a call, we need to charge them based on the rate that was active at the time the call started — not the current rate, and not a future rate.
+
+This billing model is called rollback-based pricing.
+
+Imagine this scenario:
+On June 1st at 8:00 AM, user 101 makes a call. At that moment, the price per minute is $0.10.
+But at 12:00 PM, the price changes to $0.15.
+Later that day at 1:00 PM, user 101 makes another call.
+So how do we calculate the cost for each call?
+We need to find the latest price that was in effect at or before the call start time.
+
+CREATE OR REPLACE TRANSIENT TABLE CALLS (
+  CALL_ID NUMBER,
+  USER_ID NUMBER,
+  CALL_START_TIME TIMESTAMP,
+  CALL_DURATION NUMBER
+);
+
+INSERT INTO CALLS VALUES
+(1, 101, '2024-06-01 08:00:00', 60),
+(2, 101, '2024-06-01 13:00:00', 90),
+(3, 102, '2024-06-02 10:00:00', 120),
+(4, 102, '2024-06-03 15:00:00', 30),
+(5, 103, '2024-06-04 20:00:00', 45),
+(6, 101, '2024-06-05 09:00:00', 150);
+
+
+
+CREATE OR REPLACE TRANSIENT TABLE PRICING_HISTORY (
+  USER_ID NUMBER,
+  PRICE_PER_MIN NUMBER(5,2),
+  PRICE_START_TIME TIMESTAMP
+);
+
+INSERT INTO PRICING_HISTORY VALUES
+(101, 0.10, '2024-06-01 00:00:00'),
+(101, 0.15, '2024-06-01 12:00:00'),
+(101, 0.12, '2024-06-04 00:00:00'),
+(102, 0.08, '2024-06-01 00:00:00'),
+(102, 0.09, '2024-06-03 00:00:00'),
+(103, 0.07, '2024-06-01 00:00:00');
+Example
+Trades Table
+CREATE OR REPLACE TABLE trades (
+    trade_time TIMESTAMP,
+    symbol STRING
+);
+Prices Table
+CREATE OR REPLACE TABLE prices (
+    price_time TIMESTAMP,
+    price NUMBER
+);
+
+
+How the ASOF JOIN Works
+
+SELECT 
+  C.CALL_ID,
+  C.USER_ID,
+  C.CALL_START_TIME,
+  C.CALL_DURATION,
+  P.PRICE_PER_MIN,
+  P.PRICE_START_TIME,
+  C.CALL_DURATION * P.PRICE_PER_MIN AS TOTAL_COST
+FROM CALLS C
+ASOF JOIN PRICING_HISTORY P
+  MATCH_CONDITION(C.CALL_START_TIME >= P.PRICE_START_TIME)
+  ON C.USER_ID = P.USER_ID
+ORDER BY C.CALL_ID;
+
+
+
+Why ASOF JOIN?
+
+ASOF JOIN allows us to join two tables based on:
+
+A matching key (like USER_ID)
+And the most recent record before or at a specific timestamp (like CALL_START_TIME >= PRICE_START_TIME)
+It lets us write a query that says:
+“For each call, find the most recent price (from pricing history) that applies at the time of that call.”
+
+
+
+
+Query
+SELECT *
+FROM trades t
+ASOF JOIN prices p
+MATCH_CONDITION(t.trade_time >= p.price_time);
+
+Meaning:
+
+get latest price before trade time
+10. DIRECTED JOIN
+
+Snowflake-specific optimization.
+
+Forces join order.
+
+Syntax
+SELECT *
+FROM employees
+INNER DIRECTED JOIN departments
+ON employees.dept_id = departments.dept_id;
+
+Used mainly for:
+
+performance tuning
+migration workloads

@@ -1,0 +1,175 @@
+Snowflake Geospatial Functions
+Snowflake supports geospatial data through the GEOGRAPHY and GEOMETRY types, with a rich set of functions for spatial analysis.
+
+create table geoTable
+(
+cityid int,
+cord geography
+);
+
+desc table latlon;
+insert into geoTable (cityid,cord)
+select cid, st_makepoint(longi,latti) from latlon;
+
+SELECT 
+    a.cityid AS city1,
+    b.cityid AS city2,
+    ST_DISTANCE(a.cord, b.cord) AS distance_meters
+FROM ( select * from geotable  limit 10 ) a, (select * from  geotable limit 10) b
+WHERE a.cityid < b.cityid;
+
+Data Types
+TypeDescriptionGEOGRAPHYSpherical (earth-curved) coordinates — longitude/latitudeGEOMETRYPlanar (flat) coordinates — for local/projected systems
+
+1. Constructors — Creating Spatial Objects
+sql-- Point (longitude, latitude)
+SELECT ST_MAKEPOINT(-73.9857, 40.7484) AS nyc_empire_state;
+
+-- From WKT (Well-Known Text)
+SELECT ST_GEOGFROMTEXT('POINT(-73.9857 40.7484)') AS point;
+SELECT ST_GEOGFROMTEXT('LINESTRING(-73.98 40.74, -74.00 40.71)') AS line;
+SELECT ST_GEOGFROMTEXT('POLYGON((-74 40, -73 40, -73 41, -74 41, -74 40))') AS poly;
+
+-- From GeoJSON
+SELECT ST_GEOGFROMGEOJSON('{"type":"Point","coordinates":[-73.9857,40.7484]}') AS point;
+
+2. Measurement Functions
+sql-- Distance between two points (in meters)
+SELECT ST_DISTANCE(
+  ST_MAKEPOINT(-73.9857, 40.7484),   -- Empire State Building
+  ST_MAKEPOINT(-74.0445, 40.6892)    -- Statue of Liberty
+) AS distance_meters;
+-- ≈ 8,334 meters
+
+-- Length of a line (in meters)
+SELECT ST_LENGTH(
+  ST_GEOGFROMTEXT('LINESTRING(-73.98 40.74, -74.00 40.71)')
+) AS length_meters;
+
+-- Area of a polygon (in square meters)
+SELECT ST_AREA(
+  ST_GEOGFROMTEXT('POLYGON((-74 40, -73 40, -73 41, -74 41, -74 40))')
+) AS area_sqm;
+
+-- Perimeter
+SELECT ST_PERIMETER(
+  ST_GEOGFROMTEXT('POLYGON((-74 40, -73 40, -73 41, -74 41, -74 40))')
+) AS perimeter_meters;
+
+3. Relationship / Predicate Functions
+sql-- Does polygon contain a point?
+SELECT ST_CONTAINS(
+  ST_GEOGFROMTEXT('POLYGON((-74 40, -73 40, -73 41, -74 41, -74 40))'),
+  ST_MAKEPOINT(-73.9857, 40.7484)
+) AS is_contained;  -- TRUE
+
+-- Do two geometries intersect?
+SELECT ST_INTERSECTS(
+  ST_GEOGFROMTEXT('POLYGON((-74 40, -73 40, -73 41, -74 41, -74 40))'),
+  ST_GEOGFROMTEXT('POLYGON((-73.5 40.5, -72.5 40.5, -72.5 41.5, -73.5 41.5, -73.5 40.5))')
+) AS intersects;  -- TRUE
+
+-- Are they disjoint (no overlap)?
+SELECT ST_DISJOINT(
+  ST_MAKEPOINT(-73.9857, 40.7484),
+  ST_GEOGFROMTEXT('POLYGON((-80 35, -79 35, -79 36, -80 36, -80 35))')
+) AS disjoint;  -- TRUE
+
+-- Is point within X meters of another? (using ST_DWITHIN)
+SELECT ST_DWITHIN(
+  ST_MAKEPOINT(-73.9857, 40.7484),
+  ST_MAKEPOINT(-73.9900, 40.7500),
+  500  -- 500 meters
+) AS within_500m;
+
+4. Transformation Functions
+sql-- Buffer: expand a point into a circle (radius in meters)
+SELECT ST_BUFFER(
+  ST_MAKEPOINT(-73.9857, 40.7484),
+  1000   -- 1 km radius
+) AS buffer_circle;
+
+-- Centroid of a polygon
+SELECT ST_CENTROID(
+  ST_GEOGFROMTEXT('POLYGON((-74 40, -73 40, -73 41, -74 41, -74 40))')
+) AS centroid;
+
+-- Intersection of two polygons
+SELECT ST_INTERSECTION(
+  ST_GEOGFROMTEXT('POLYGON((-74 40, -73 40, -73 41, -74 41, -74 40))'),
+  ST_GEOGFROMTEXT('POLYGON((-73.5 40.5, -72.5 40.5, -72.5 41.5, -73.5 41.5, -73.5 40.5))')
+) AS overlap;
+
+-- Union of two polygons
+SELECT ST_UNION(
+  ST_GEOGFROMTEXT('POLYGON((-74 40, -73 40, -73 41, -74 41, -74 40))'),
+  ST_GEOGFROMTEXT('POLYGON((-73.5 40, -72.5 40, -72.5 41, -73.5 41, -73.5 40))')
+) AS combined;
+
+-- Convex hull
+SELECT ST_CONVEXHULL(
+  ST_GEOGFROMTEXT('MULTIPOINT((-73.98 40.74),(-74.00 40.71),(-73.95 40.65))')
+) AS hull;
+
+5. Output / Conversion Functions
+sql-- To WKT
+SELECT ST_ASTEXT(ST_MAKEPOINT(-73.9857, 40.7484));
+-- POINT(-73.9857 40.7484)
+
+-- To GeoJSON
+SELECT ST_ASGEOJSON(ST_MAKEPOINT(-73.9857, 40.7484));
+-- {"type":"Point","coordinates":[-73.9857,40.7484]}
+
+-- To WKB (binary)
+SELECT ST_ASWKB(ST_MAKEPOINT(-73.9857, 40.7484));
+
+-- Extract X (longitude) and Y (latitude)
+SELECT
+  ST_X(ST_MAKEPOINT(-73.9857, 40.7484)) AS longitude,
+  ST_Y(ST_MAKEPOINT(-73.9857, 40.7484)) AS latitude;
+
+6. Accessor Functions
+sql-- Number of points in a geometry
+SELECT ST_NPOINTS(
+  ST_GEOGFROMTEXT('LINESTRING(-74 40, -73 40, -72 41, -71 42)')
+) AS num_points;  -- 4
+
+-- Geometry type
+SELECT ST_GEOMETRYTYPE(ST_MAKEPOINT(-73.9857, 40.7484));
+-- ST_POINT
+
+-- Bounding box / envelope
+SELECT ST_ENVELOPE(
+  ST_GEOGFROMTEXT('LINESTRING(-74 40, -72 41)')
+) AS bbox;
+
+7. Real-World Query Example
+Find all stores within 5 km of a customer:
+sqlSELECT
+  s.store_name,
+  ST_DISTANCE(
+    ST_MAKEPOINT(c.longitude, c.latitude),
+    ST_MAKEPOINT(s.longitude, s.latitude)
+  ) AS distance_meters
+FROM customers c
+JOIN stores s
+  ON ST_DWITHIN(
+       ST_MAKEPOINT(c.longitude, c.latitude),
+       ST_MAKEPOINT(s.longitude, s.latitude),
+       5000  -- 5 km
+     )
+WHERE c.customer_id = 101
+ORDER BY distance_meters;
+
+
+Aggregate: Count points inside each region:
+sqlSELECT
+  r.region_name,
+  COUNT(e.event_id) AS events_in_region
+FROM regions r
+JOIN events e
+  ON ST_CONTAINS(r.boundary, ST_MAKEPOINT(e.lon, e.lat))
+GROUP BY r.region_name;
+
+Quick Reference Cheat Sheet
+FunctionPurposeST_MAKEPOINT(lon, lat)Create a pointST_GEOGFROMTEXT(wkt)Parse WKT stringST_GEOGFROMGEOJSON(json)Parse GeoJSONST_DISTANCE(a, b)Distance in metersST_CONTAINS(poly, point)Containment checkST_INTERSECTS(a, b)Intersection checkST_DWITHIN(a, b, dist)Within N metersST_BUFFER(geom, radius)Create buffer zoneST_CENTROID(geom)Find centerST_AREA(geom)Area in m²ST_LENGTH(line)Length in metersST_ASGEOJSON(geom)Export as GeoJSONST_ASTEXT(geom)Export as WKT

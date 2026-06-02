@@ -1,0 +1,87 @@
+// Creating ORDERS table
+
+CREATE OR REPLACE TABLE OUR_FIRST_DB.PUBLIC.ORDERS (
+    ORDER_ID VARCHAR(30),
+    AMOUNT INT,
+    PROFIT INT,
+    QUANTITY INT,
+    CATEGORY VARCHAR(30),
+    SUBCATEGORY VARCHAR(30));
+    
+SELECT * FROM OUR_FIRST_DB.PUBLIC.ORDERS;
+   
+// First copy command
+
+COPY INTO OUR_FIRST_DB.PUBLIC.ORDERS
+    FROM @aws_stage
+    file_format = (type = csv field_delimiter=',' skip_header=1);
+
+
+
+
+// Copy command with fully qualified stage object
+
+COPY INTO OUR_FIRST_DB.PUBLIC.ORDERS
+    FROM @MANAGE_DB.external_stages.aws_stage
+    file_format= (type = csv field_delimiter=',' skip_header=1);
+
+
+
+
+// List files contained in stage
+
+LIST @MANAGE_DB.external_stages.aws_stage;    
+
+
+
+
+// Copy command with specified file(s)
+
+COPY INTO OUR_FIRST_DB.PUBLIC.ORDERS
+    FROM @MANAGE_DB.external_stages.aws_stage
+    file_format= (type = csv field_delimiter=',' skip_header=1)
+    files = ('OrderDetails.csv');
+    
+
+
+
+// Copy command with pattern for file names
+
+COPY INTO OUR_FIRST_DB.PUBLIC.ORDERS
+    FROM @MANAGE_DB.external_stages.aws_stage
+    file_format= (type = csv field_delimiter=',' skip_header=1)
+    pattern='.*Order.*';
+    
+
+create table latlon
+(
+cid int,
+latti number(10,4),
+longi number(10,4)
+);
+
+
+
+COPY INTO latlon 
+FROM @stg1/mydata/
+FILES = ('latlon.tsv')
+FILE_FORMAT = (
+    TYPE = CSV
+    FIELD_DELIMITER = '\t'
+);
+
+
+-------------
+
+json
+
+
+
+copy into ppl from @stg1/mydata2/
+FILES = ('people.json')
+FILE_FORMAT = (
+    TYPE = json
+)
+MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE;
+
+
